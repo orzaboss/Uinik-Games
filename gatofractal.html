@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UINIK PLAY - Gato Fractal</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000000;
+            color: #fff;
+            font-family: 'Orbitron', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Pantalla de Inicio */
+        .intro-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 2s ease-out;
+        }
+
+        .intro-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .intro-logo {
+            text-align: center;
+            animation: logoFadeIn 3s ease-out;
+        }
+
+        .intro-logo h1 {
+            font-size: 4em;
+            margin: 0;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            animation: textGlow 2s ease-in-out infinite alternate;
+        }
+
+        .intro-logo h2 {
+            font-size: 2em;
+            margin: 20px 0 0 0;
+            color: #ffffff;
+            font-weight: 400;
+            letter-spacing: 3px;
+            animation: textGlow 2s ease-in-out infinite alternate 0.5s;
+        }
+
+        /* Pantalla de Selección de Colores */
+        .color-selection-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+        }
+
+        .color-selection-screen.active {
+            opacity: 1;
+        }
+
+        .color-selection-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .color-title {
+            font-size: 2.5em;
+            font-weight: 900;
+            margin-bottom: 50px;
+            color: #ffffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        .players-setup {
+            display: flex;
+            gap: 60px;
+            margin-bottom: 50px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: slideInFromSides 1s ease-out 0.5s both;
+        }
+
+        .player-setup {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .player-setup:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .player-setup label {
+            font-size: 1.3em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #ffffff;
+        }
+
+        .color-picker {
+            width: 80px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            background: transparent;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        /* Restringir colores oscuros */
+        .color-picker:invalid {
+            border-color: #ff4444;
+        }
+
+        .color-picker:hover {
+            transform: scale(1.1);
+            border-color: #ffffff;
+        }
+
+        .start-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            padding: 20px 50px;
+            font-size: 1.4em;
+            cursor: pointer;
+            border-radius: 15px;
+            font-family: inherit;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.4s ease;
+            animation: continueButtonAppear 1s ease-out 1s both;
+        }
+
+        .start-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #ffffff;
+            transform: translateY(-3px);
+        }
+
+        /* Juego Principal */
+        .game-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: all 1s ease-in-out;
+        }
+
+        .game-container.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideInFromTop 1.2s ease-out;
+        }
+
+        .header h1 {
+            font-size: 3em;
+            margin: 0;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .header h2 {
+            font-size: 1.8em;
+            margin: 15px 0;
+            color: #ccc;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+
+        .game-info {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+
+        .current-player {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.5s ease;
+            color: #ffffff;
+        }
+
+        .instructions {
+            font-size: 1em;
+            color: #aaa;
+            max-width: 600px;
+            text-align: center;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 20px;
+            margin: 20px 0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            animation: zoomIn 0.8s ease-out 1s both;
+        }
+
+        .small-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 8px;
+            width: 130px;
+            height: 130px;
+            position: relative;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+        }
+
+        .small-board:hover {
+            transform: translateY(-2px);
+        }
+
+        .small-board.active {
+            animation: pulseWhite 1.5s ease-in-out infinite;
+            border-color: #ffffff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .small-board.won {
+            background: rgba(80, 80, 80, 0.8);
+            pointer-events: none;
+            animation: boardWon 0.6s ease-out;
+        }
+
+        .small-board.won::after {
+            content: attr(data-winner);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 4em;
+            font-weight: 900;
+            z-index: 10;
+            animation: symbolAppear 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) 0.2s both;
+        }
+
+        .cell {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 35px;
+            border-radius: 6px;
+            position: relative;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        .cell.filled {
+            cursor: not-allowed;
+            animation: cellFilled 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .cell.filled:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: none;
+        }
+
+        .controls {
+            display: flex;
+            gap: 25px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+            animation: slideInFromBottom 1s ease-out 1.2s both;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 30px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border-radius: 12px;
+            font-family: inherit;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.4s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #ffffff;
+            transform: translateY(-3px);
+        }
+
+        .btn:active {
+            transform: translateY(-1px);
+        }
+
+        .game-over {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 1.8em;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: gameOverAnimation 1s ease-out;
+            color: #ffffff;
+        }
+
+        /* Animaciones */
+        @keyframes logoFadeIn {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes textGlow {
+            0% {
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            }
+            100% {
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            }
+        }
+
+        @keyframes slideInFromSides {
+            0% {
+                opacity: 0;
+                transform: translateX(-100px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes continueButtonAppear {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            60% {
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideInFromTop {
+            0% {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInFromBottom {
+            0% {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            0% {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes zoomIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulseWhite {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(255, 255, 255, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.1);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), inset 0 0 30px rgba(255, 255, 255, 0.2);
+            }
+        }
+
+        @keyframes boardWon {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes symbolAppear {
+            0% {
+                transform: translate(-50%, -50%) scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: translate(-50%, -50%) scale(1.2) rotate(-10deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes cellFilled {
+            0% {
+                transform: scale(0.8);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes gameOverAnimation {
+            0% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .cell.just-played {
+            animation: cellPlaced 0.8s ease-out;
+        }
+
+        @keyframes cellPlaced {
+            0% {
+                transform: scale(0) rotate(180deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.3) rotate(90deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .intro-logo h1 {
+                font-size: 2.5em;
+            }
+            
+            .intro-logo h2 {
+                font-size: 1.5em;
+            }
+            
+            .game-board {
+                transform: scale(0.85);
+            }
+            
+            .header h1 {
+                font-size: 2.2em;
+            }
+            
+            .header h2 {
+                font-size: 1.4em;
+            }
+
+            .players-setup {
+                gap: 30px;
+            }
+
+            .player-setup {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .intro-logo h1 {
+                font-size: 2em;
+            }
+            
+            .game-board {
+                transform: scale(0.75);
+            }
+            
+            .header h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de Inicio -->
+    <div class="intro-screen" id="introScreen">
+        <div class="intro-logo">
+            <h1>UINIK</h1>
+            <h2>PLAY</h2>
+        </div>
+    </div>
+
+    <!-- Pantalla de Selección de Colores -->
+    <div class="color-selection-screen" id="colorSelectionScreen">
+        <div class="color-title">Selecciona los Colores</div>
+        
+        <div class="players-setup">
+            <div class="player-setup">
+                <label>Jugador 1 (X)</label>
+                <input type="color" class="color-picker" id="player1Color" value="#ff0000" onchange="validateColor(this)">
+            </div>
+            <div class="player-setup">
+                <label>Jugador 2 (O)</label>
+                <input type="color" class="color-picker" id="player2Color" value="#0080ff" onchange="validateColor(this)">
+            </div>
+        </div>
+        
+        <button class="start-button" onclick="startGame()">JUGAR</button>
+    </div>
+
+    <!-- Juego Principal -->
+    <div class="game-container" id="gameContainer">
+        <div class="header">
+            <h1>UINIK PLAY</h1>
+            <h2>GATO FRACTAL</h2>
+        </div>
+
+        <div class="game-info">
+            <div class="current-player" id="currentPlayer">Turno: Jugador 1 (X)</div>
+            <div class="instructions">
+                Tu jugada determina dónde debe jugar tu oponente en el tablero grande. 
+                Gana 3 tableros pequeños en línea para ganar el juego.
+            </div>
+        </div>
+
+        <div class="game-board" id="gameBoard">
+            <!-- Se generará dinámicamente -->
+        </div>
+
+        <div class="game-over" id="gameOver"></div>
+
+        <div class="controls">
+            <button class="btn" onclick="resetGame()">Reiniciar</button>
+        </div>
+    </div>
+
+    <script>
+        let currentPlayer = 'X';
+        let gameState = {
+            boards: Array(9).fill().map(() => Array(9).fill('')),
+            winners: Array(9).fill(''),
+            activeBoard: null,
+            gameWinner: null
+        };
+
+        // Validar que el color no sea muy oscuro (evitar negro)
+        function validateColor(colorInput) {
+            const color = colorInput.value;
+            const r = parseInt(color.substr(1, 2), 16);
+            const g = parseInt(color.substr(3, 2), 16);
+            const b = parseInt(color.substr(5, 2), 16);
+            
+            // Calcular brillo usando la fórmula de luminancia
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            
+            // Si el color es muy oscuro (brillo menor a 50), cambiarlo a un color más claro
+            if (brightness < 50) {
+                // Asignar colores alternativos claros
+                const lightColors = ['#ff4444', '#4444ff', '#44ff44', '#ffff44', '#ff44ff', '#44ffff', '#ff8844', '#8844ff'];
+                const randomColor = lightColors[Math.floor(Math.random() * lightColors.length)];
+                colorInput.value = randomColor;
+                
+                // Mostrar mensaje temporal
+                showColorWarning();
+            }
+        }
+
+        function showColorWarning() {
+            // Crear mensaje temporal
+            const warning = document.createElement('div');
+            warning.textContent = 'Color muy oscuro - se cambió automáticamente';
+            warning.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(255, 68, 68, 0.9);
+                color: white;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-family: inherit;
+                font-size: 0.9em;
+                z-index: 2000;
+                animation: fadeInOut 2s ease-in-out;
+            `;
+            
+            document.body.appendChild(warning);
+            
+            // Remover el mensaje después de 2 segundos
+            setTimeout(() => {
+                document.body.removeChild(warning);
+            }, 2000);
+        }
+
+        // Agregar animación para el mensaje de advertencia
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInOut {
+                0%, 100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+                10%, 90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Iniciar secuencia de pantallas
+        window.onload = function() {
+            // Después de 1.5 segundos, mostrar selección de colores
+            setTimeout(() => {
+                document.getElementById('introScreen').classList.add('fade-out');
+                setTimeout(() => {
+                    document.getElementById('colorSelectionScreen').classList.add('active');
+                }, 1000);
+            }, 1500);
+        };
+
+        function startGame() {
+            const colorScreen = document.getElementById('colorSelectionScreen');
+            const gameContainer = document.getElementById('gameContainer');
+            
+            colorScreen.classList.add('fade-out');
+            
+            setTimeout(() => {
+                gameContainer.classList.add('active');
+                initGame();
+            }, 500);
+        }
+
+        function initGame() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+
+            for (let i = 0; i < 9; i++) {
+                const smallBoard = document.createElement('div');
+                smallBoard.className = 'small-board';
+                smallBoard.id = `board-${i}`;
+
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.onclick = () => makeMove(i, j);
+                    cell.id = `cell-${i}-${j}`;
+                    smallBoard.appendChild(cell);
+                }
+
+                gameBoard.appendChild(smallBoard);
+            }
+
+            updateDisplay();
+        }
+
+        function makeMove(boardIndex, cellIndex) {
+            if (gameState.gameWinner) return;
+            if (gameState.winners[boardIndex]) return;
+            if (gameState.boards[boardIndex][cellIndex]) return;
+            if (gameState.activeBoard !== null && gameState.activeBoard !== boardIndex) return;
+
+            gameState.boards[boardIndex][cellIndex] = currentPlayer;
+            
+            const cell = document.getElementById(`cell-${boardIndex}-${cellIndex}`);
+            cell.textContent = currentPlayer;
+            cell.className = 'cell filled just-played';
+            cell.style.color = currentPlayer === 'X' ? 
+                document.getElementById('player1Color').value : 
+                document.getElementById('player2Color').value;
+
+            setTimeout(() => {
+                cell.classList.remove('just-played');
+            }, 800);
+
+            checkSmallBoardWinner(boardIndex);
+            
+            if (gameState.winners[cellIndex] || isBoardFull(cellIndex)) {
+                gameState.activeBoard = null;
+            } else {
+                gameState.activeBoard = cellIndex;
+            }
+
+            checkGameWinner();
+
+            if (!gameState.gameWinner) {
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                updateDisplay();
+            }
+        }
+
+        function checkSmallBoardWinner(boardIndex) {
+            const board = gameState.boards[boardIndex];
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let line of lines) {
+                const [a, b, c] = line;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                    gameState.winners[boardIndex] = board[a];
+                    const smallBoard = document.getElementById(`board-${boardIndex}`);
+                    smallBoard.className = 'small-board won';
+                    smallBoard.setAttribute('data-winner', board[a]);
+                    smallBoard.style.color = board[a] === 'X' ? 
+                        document.getElementById('player1Color').value : 
+                        document.getElementById('player2Color').value;
+                    return;
+                }
+            }
+
+            if (board.every(cell => cell !== '')) {
+                gameState.winners[boardIndex] = 'T';
+                const smallBoard = document.getElementById(`board-${boardIndex}`);
+                smallBoard.className = 'small-board won';
+                smallBoard.setAttribute('data-winner', '=');
+                smallBoard.style.color = '#888';
+            }
+        }
+
+        function checkGameWinner() {
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+
+            for (let line of lines) {
+                const [a, b, c] = line;
+                if (gameState.winners[a] && 
+                    gameState.winners[a] === gameState.winners[b] && 
+                    gameState.winners[a] === gameState.winners[c] &&
+                    gameState.winners[a] !== 'T') {
+                    gameState.gameWinner = gameState.winners[a];
+                    const gameOverElement = document.getElementById('gameOver');
+                    const playerName = gameState.gameWinner === 'X' ? 'Jugador 1' : 'Jugador 2';
+                    const color = gameState.gameWinner === 'X' ? 
+                        document.getElementById('player1Color').value : 
+                        document.getElementById('player2Color').value;
+                    
+                    gameOverElement.textContent = `¡${playerName} (${gameState.gameWinner}) Gana!`;
+                    gameOverElement.style.color = color;
+                    return;
+                }
+            }
+
+            if (gameState.winners.every(winner => winner !== '')) {
+                gameState.gameWinner = 'T';
+                const gameOverElement = document.getElementById('gameOver');
+                gameOverElement.textContent = '¡Empate Global!';
+                gameOverElement.style.color = '#ffffff';
+            }
+        }
+
+        function isBoardFull(boardIndex) {
+            return gameState.boards[boardIndex].every(cell => cell !== '');
+        }
+
+        function updateDisplay() {
+            const playerName = currentPlayer === 'X' ? 'Jugador 1' : 'Jugador 2';
+            const currentPlayerElement = document.getElementById('currentPlayer');
+            const newColor = currentPlayer === 'X' ? 
+                document.getElementById('player1Color').value : 
+                document.getElementById('player2Color').value;
+
+            currentPlayerElement.style.opacity = '0';
+            setTimeout(() => {
+                currentPlayerElement.textContent = `Turno: ${playerName} (${currentPlayer})`;
+                currentPlayerElement.style.color = newColor;
+                currentPlayerElement.style.opacity = '1';
+            }, 200);
+
+            for (let i = 0; i < 9; i++) {
+                const board = document.getElementById(`board-${i}`);
+                if (gameState.winners[i]) continue;
+
+                if (gameState.activeBoard === null || gameState.activeBoard === i) {
+                    board.classList.add('active');
+                } else {
+                    board.classList.remove('active');
+                }
+            }
+        }
+
+        function resetGame() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.style.opacity = '0';
+            gameBoard.style.transform = 'scale(0.8)';
+
+            setTimeout(() => {
+                currentPlayer = 'X';
+                gameState = {
+                    boards: Array(9).fill().map(() => Array(9).fill('')),
+                    winners: Array(9).fill(''),
+                    activeBoard: null,
+                    gameWinner: null
+                };
+                document.getElementById('gameOver').textContent = '';
+                
+                initGame();
+                
+                gameBoard.style.opacity = '1';
+                gameBoard.style.transform = 'scale(1)';
+            }, 300);
+        }
+    </script>
+</body>
+</html>
